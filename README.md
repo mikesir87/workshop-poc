@@ -47,26 +47,57 @@ To try it out, you'll first start off by launching the workshop environment. Aft
 
 4. Run another `docker ps` and you'll see the containers you started!
 
-5. To experiment with the volume remapping... start another container and mount the `dev/db` directory into the container:
+5. Try out Testcontainers by running the following command:
 
     ```console
-    docker run --rm -tiv ./dev/db:/data ubuntu
+    npm run integration-test
     ```
 
-    Now, run `ls /data` and see the file that's there! Yet, if you look at the container config on the host, you'll see the volume mount's source is _not_ `./dev/db`, but the `project` volume!
+### Experiment - volume remapping
 
-    Exit that container now by running `exit`
-
-6. To experiment with the Docker Socket remapping, start a new container and share the Docker socket:
+1. In the VS Code terminal, start another container and mount the `dev/db` directory into the container:
 
     ```console
-    docker run --rm -tiv /var/run/docker.sock:/var/run/docker.sock docker sh
+    docker run --rm -tiv ./dev/db:/data --name=data-demo ubuntu
     ```
 
-    In this new terminal, run `docker ps` and validate you can still only see the containers created inside of the workshop!
+2. In that newly launched container, run `ls /data` and see the file that's there! 
 
-    If you inspect this `docker` container from the host, you'll see that the socket is the proxied socket, not `/var/run/docker.sock`.
+    ```console
+    root@a8f1776a6069:/# ls /data
+    1-create-schema.sql
+    ```
 
-7. To run the Testcontainers tests, run `npm run integration-test` in the VS code terminal (not inside of a container).
+3. On your host machine, run the following command to look at the mount source:
 
-    You'll see the containers start up and run as you would expect! All of the mount paths are remapped, etc.
+    ```console
+    docker inspect --format='{{range .Mounts}}{{println .Type .Name .Source .Destination}}{{end}}' data-demo
+    ```
+
+    What you'll see is this is _not_ a bind mount (as the `./dev/db` argument in the `docker run` command would suggest). Instead, it is a mount to the volume named `project`!
+
+4. Exit the container now by running `exit` (in the VS Code terminal).
+
+### Experiment - Docker Socket remapping
+
+1. Start a new container and share the Docker socket:
+
+    ```console
+    docker run --rm -tiv /var/run/docker.sock:/var/run/docker.sock --name=socket-demo docker sh
+    ```
+
+2. In the new container, run `docker ps`. You should only see the containers created since you started the workshop environment!
+
+3. Run the following command to inspect the container and see where the Docker Socket is coming from:
+
+    ```console
+    docker inspect --format='{{range .Mounts}}{{println .Type .Name .Source .Destination}}{{end}}' socket-demo
+    ```
+
+    In the output, you should see an entry for:
+
+    ```
+    volume socket-proxy /var/lib/docker/volumes/socket-proxy/_data /var/run/docker.sock
+    ```
+
+    The socket is coming from the Docker Socket proxy... meaning this nested container is _also_ being proxied!
