@@ -1,0 +1,69 @@
+services:
+  project-setup:
+    image: node:lts
+    working_dir: /usr/local/app
+    command: ./setup.sh
+    volumes:
+      - ./setup:/usr/local/app
+      - project:/project
+
+  coder:
+    build: ./
+    depends_on:
+      project-setup:
+        condition: service_completed_successfully
+    network_mode: host
+    volumes:
+      - project:/home/coder/project
+      - ~/.local:/home/coder/.local
+      - ./coder-config:/home/coder/.config/code-server
+      - socket-proxy:/var/run
+    environment:
+      DOCKER_USER: $USER
+      CS_DISABLE_GETTING_STARTED_OVERRIDE: 1
+      PORT: 8085
+
+  socket-proxy:
+    image: mikesir87/docker-socket-proxy
+    # image: docker-socket-proxy
+    volumes:
+      - socket-proxy:/tmp/proxy
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      DEBUG_LOGS: "true"
+      CONFIG_DATA: |
+        mutators:
+          # Remap the project directory to the project volume, since the project
+          # is running out of a volume.
+          - type: mountPath
+            from: /home/coder/project
+            to: project
+
+          # If requests to use the Docker Socket are used (such as Testcontainers),
+          # use the proxied one to ensure permissions, remappings, etc. are applied
+          - type: mountPath
+            from: /var/run/docker.sock
+            to: socket-proxy/docker.sock
+
+          # Add labels to all newly created objects
+          - type: addLabels
+            labels:
+              demo-setup: "true"
+        gates:
+          - type: mountSource
+            allowedSources:
+              - project
+              - socket-proxy
+
+        responseFilters:
+          # Only return objects with the labels we mutated on
+          - type: labelFilter
+            requiredLabels:
+              demo-setup: "true"
+      LISTEN_SOCKET_PATH: /tmp/proxy/docker.sock
+
+volumes:
+  socket-proxy:
+    name: socket-proxy
+  project:
+    name: project
