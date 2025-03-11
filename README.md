@@ -35,6 +35,7 @@ flowchart LR
 
 - Running multiple instances will cause port conflicts
 - Volume names are currently hard-coded in the Compose file (for remapping/allowlisting of mount sources)
+- The Compose file uses `$PWD` to setup the proxy config, which may or may not work in certain Windows environments
 
 ## Try it out
 
