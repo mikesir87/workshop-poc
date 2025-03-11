@@ -2,12 +2,34 @@
 
 This is only a PoC that demonstrates how one might be able to launch a workshop using containers in a multi-tenant fashion.
 
-Due to the [Docker Socket Proxy](https://github.com/mikesir87/docker-socket-proxy) in the environment, there are a few protections/configurations that make this environment unique:
+![Screenshot of the project opened in the browser using VS Code server](./screenshot.png)
 
-- Docker commands will only return the items created by this environment
-- Mounts in new containers are only allowed from the project directory
-- Mount source paths are remapped to ensure file paths work correctly
-- Requests to start a new container with the Docker socket will be remapped to use the proxied socket
+## Architecture
+
+The project uses a combination of containers to create an isolated environment.
+
+```mermaid
+flowchart LR
+    subgraph VS Code Server
+        project["/home/coder/project"]
+        socket["/var/run/docker.sock"]
+    end
+
+    Setup[Project setup] -->|Clones and populates| Volume@{ shape: cyl, label: "project\nvolume" }
+    Volume --> project
+
+    ProxyContainer[Socket Proxy] -->|Creates socket| SocketVolume@{ shape: cyl, label: "socket\nvolume" }
+    SocketVolume --> socket
+```
+
+- VS Code Server - utilizes the [coder/code-server](https://github.com/coder/code-server) project to provide VS Code in a browser
+- Setup container - clones the repo and puts it into a volume that is then shared with the VS Code server.
+  - For this PoC, it will clone and use the [Catalog Service](https://github.com/dockersamples/catalog-service-node) project. But, it's pretty easy to swap to another project
+- [Docker Socket Proxy](https://github.com/mikesir87/docker-socket-proxy) - wraps the Docker Socket to put various protections/remappings in place. Specifically:
+  - Docker commands will only return the items created by this environment (newly created items are mutated with a label and object responses filter on that label)
+  - Mounts in new containers are only allowed from within the project
+  - Mount source paths are remapped to the volume the files are found in (even if using relative paths)
+  - Requests to start a new container with the Docker socket will be remapped to use the proxied socket. This ensures Testcontainers config also uses the remapping, etc.
 
 ## Known limitations
 
