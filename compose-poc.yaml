@@ -1,15 +1,12 @@
 services:
   project-setup:
-    image: node:lts
-    working_dir: /usr/local/app
-    command: ./setup.sh
+    image: michaelirwin244/workshop-poc:setup
     volumes:
-      - ./setup:/usr/local/app
       - project:/project
 
   coder:
-    build:
-      dockerfile: Dockerfile-workspace
+    image: michaelirwin244/workshop-poc:workspace
+    command: /home/coder/project
     depends_on:
       project-setup:
         condition: service_completed_successfully
