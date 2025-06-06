@@ -1,4 +1,4 @@
 FROM node:lts
 WORKDIR /usr/local/app
-COPY ./setup/setup.sh ./
+COPY ./setup.sh ./
 CMD ["./setup.sh"]

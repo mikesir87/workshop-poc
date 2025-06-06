@@ -1,0 +1,17 @@
+services:
+  javascript-app:
+    build:
+      context: .
+    container_name: javascript-app
+    restart: unless-stopped
+    init: true
+    ports:
+      - "3000:3000"  # Exposed by Dockerfile
+    # env_file: ./.env  # Uncomment if .env file exists
+    # Add volumes here if your app needs persistent storage
+    # Add depends_on here if you add external services
+    # networks: [appnet]  # Uncomment if you add more services/networks
+
+# No external services (databases, caches, etc.) detected in documentation or source code.
+# No volumes section included as there are no persistent data requirements.
+# No custom networks defined as there is only one service.

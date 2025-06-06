@@ -1,4 +1,14 @@
 services:
+  instructions:
+    image: michaelirwin244/workshop-poc:markdown-renderer
+    ports:
+      - 8000:3000
+    volumes:
+      - project:/project
+    environment:
+      ROOT_DIR: /project/docs
+      SITE_TITLE: Workshop POC
+
   project-setup:
     image: node:lts
     working_dir: /usr/local/app

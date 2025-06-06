@@ -23,4 +23,4 @@ RUN mkdir -p /home/coder/.config/code-server && \
 USER 1000
 RUN code-server --install-extension orta.vscode-jest && \
     code-server --install-extension ms-azuretools.vscode-docker
-COPY ./workspace/config.yaml /home/coder/.config/code-server/config.yaml
+COPY ./config.yaml /home/coder/.config/code-server/config.yaml
