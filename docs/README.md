@@ -5,10 +5,10 @@ This workshop is merely a proof of concept on the various technical aspects need
 
 ## Workshop contents
 
-1. [Running, troubleshooting, and connecting to a containerized database](./docs/1-containers.md)
-2. [Sharing container configurations in your projects](./docs/2-sharing-container-config.md)
-3. [Building a container image](./docs/3-building-images.md)
-4. [Securing your container images](./docs/4-securing-images.md)
+1. [Running, troubleshooting, and connecting to a containerized database](./1-containers)
+2. [Sharing container configurations in your projects](./2-sharing-container-config)
+3. [Building a container image](./3-building-images)
+4. [Securing your container images](./4-securing-images)
 
 
 ## The sample application
