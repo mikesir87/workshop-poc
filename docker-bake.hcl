@@ -1,5 +1,5 @@
 group "default" {
-  targets = [ "markdown-server", "setup", "workspace" ]
+  targets = [ "markdown-server", "setup", "workspace", "host-forwarding" ]
 }
 
 target "_common" {
@@ -32,5 +32,13 @@ target "workspace" {
   context = "./support/workspace"
   tags = [
     "michaelirwin244/workshop-poc:workspace",
+  ]
+}
+
+target "host-forwarding" {
+  inherits = ["_common"]
+  context = "./support/host-proxy-watcher"
+  tags = [
+    "michaelirwin244/workshop-poc:host-forwarding",
   ]
 }

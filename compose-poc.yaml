@@ -1,6 +1,6 @@
 services:
   instructions:
-    image: michaelirwin244/workshop-poc:markdown-renderer
+    image: michaelirwin244/workshop-poc:markdown-server
     ports:
       - 8000:3000
     volumes:
@@ -23,10 +23,9 @@ services:
     depends_on:
       project-setup:
         condition: service_completed_successfully
-    network_mode: host
-    # ports:
-    #   - 8085:8085 # For the IDE itself
-    #   - 3000:3000 # For the application running in the IDE
+    ports:
+      - 8085:8085 # For the IDE itself
+      - 3000:3000 # For the application running in the IDE
     volumes:
       - socket-proxy:/var/run
       - type: volume
@@ -36,8 +35,17 @@ services:
           nocopy: true
           subpath: workspace
 
+  host-forwarding:
+    image: michaelirwin244/workshop-poc:host-forwarding
+    volumes:
+      - socket-proxy:/var/run
+    network_mode: service:coder
+    depends_on:
+      - coder
+
   socket-proxy:
     image: mikesir87/docker-socket-proxy
+    # image: socket-proxy
     volumes:
       - socket-proxy:/tmp/proxy
       - /var/run/docker.sock:/var/run/docker.sock
@@ -73,6 +81,10 @@ services:
             requiredLabels:
               demo-setup: "true"
       LISTEN_SOCKET_PATH: /tmp/proxy/docker.sock
+    # pre_stop:
+    #   - command: docker rm -f $(docker ps -aq --filter "label=demo-setup=true") || true
+    #   - command: docker volume rm -f $(docker volume ls -q --filter "label=demo-setup=true") || true
+    #   - command: docker network rm -f $(docker network ls -q --filter "label=demo-setup=true") || true
 
 volumes:
   socket-proxy:
