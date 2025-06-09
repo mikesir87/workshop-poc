@@ -19,6 +19,17 @@ const md = markdownit({
   }
 });
 
+md.renderer.rules.link_open = function(tokens, idx, options, env, self) {
+  const hrefIndex = tokens[idx].attrIndex('href');
+  if (hrefIndex >= 0) {
+    let href = tokens[idx].attrs[hrefIndex][1];
+    if (href.endsWith('.md')) {
+      tokens[idx].attrs[hrefIndex][1] = href.slice(0, -3);
+    }
+  }
+  return self.renderToken(tokens, idx, options);
+};
+
 
 const SITE_TITLE = process.env.SITE_TITLE || "Markdown Renderer Sample";
 const ROOT_DIR = process.env.ROOT_DIR || "./src/samples";

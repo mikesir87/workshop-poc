@@ -6,7 +6,7 @@ services:
     volumes:
       - project:/project
     environment:
-      ROOT_DIR: /project/demo/workshop-poc
+      ROOT_DIR: /project/docs
       SITE_TITLE: Workshop POC
     depends_on:
       project-setup:
@@ -23,12 +23,18 @@ services:
     depends_on:
       project-setup:
         condition: service_completed_successfully
-    ports:
-      - 8085:8085 # For the IDE itself
-      - 3000:3000 # For the application running in the IDE
+    network_mode: host
+    # ports:
+    #   - 8085:8085 # For the IDE itself
+    #   - 3000:3000 # For the application running in the IDE
     volumes:
-      - project:/home/coder/project
       - socket-proxy:/var/run
+      - type: volume
+        source: project
+        target: /home/coder/project
+        volume:
+          nocopy: true
+          subpath: workspace
 
   socket-proxy:
     image: mikesir87/docker-socket-proxy
@@ -43,7 +49,7 @@ services:
           # is running out of a volume.
           - type: mountPath
             from: /home/coder/project
-            to: project
+            to: project/workspace
 
           # If requests to use the Docker Socket are used (such as Testcontainers),
           # use the proxied one to ensure permissions, remappings, etc. are applied

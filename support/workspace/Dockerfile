@@ -17,8 +17,10 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x -o /tmp/nodesource_setup.sh
 
 RUN mkdir -p /home/coder/.config/code-server && \
     mkdir -p /home/coder/.local/share/code-server && \
+    mkdir -p /home/coder/.npm && \
     chown -R coder:coder /home/coder/.config/code-server && \
-    chown -R coder:coder /home/coder/.local/share/code-server
+    chown -R coder:coder /home/coder/.local/share/code-server && \
+    chown -R coder:coder /home/coder/.npm
 
 USER 1000
 RUN code-server --install-extension orta.vscode-jest && \
