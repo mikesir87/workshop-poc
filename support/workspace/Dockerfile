@@ -22,7 +22,12 @@ RUN mkdir -p /home/coder/.config/code-server && \
     chown -R coder:coder /home/coder/.local/share/code-server && \
     chown -R coder:coder /home/coder/.npm
 
+RUN apt update && \
+    apt install -y postgresql-client && \
+    rm -rf /var/lib/apt/lists/*
+
 USER 1000
 RUN code-server --install-extension orta.vscode-jest && \
     code-server --install-extension ms-azuretools.vscode-docker
 COPY ./config.yaml /home/coder/.config/code-server/config.yaml
+COPY ./settings.json /home/coder/.local/share/code-server/User/settings.json
