@@ -9,6 +9,6 @@ cd /project
 # Remove everything including hidden files (like the .git directory)
 ls -A1 | xargs rm -rf
 
-git clone https://github.com/mikesir87/workshop-poc .
+git clone https://github.com/mikesir87/workshop-poc-content .
 
 chown 1000:1000 -R /project
