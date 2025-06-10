@@ -9,33 +9,47 @@ This is only a PoC that demonstrates how one might be able to launch a workshop 
 The project uses a combination of containers to create an isolated environment.
 
 ```mermaid
-flowchart LR
+flowchart TD
     subgraph VS Code Server
-        project["/home/coder/project"]
-        socket["/var/run/docker.sock"]
+        project@{ shape: odd, label: "/home/coder/project" }
+        socket@{ shape: odd, label: "/var/run/docker.sock" }
+        localhostPorts[Localhost ports]
+
+        subgraph Shared Network Namespace
+            localhostPorts["Localhost ports"]
+            socat["Socat processes"]
+            Forwarder[Port forwarder]
+        end
     end
 
-    Setup[Project setup] -->|Clones and populates| Volume@{ shape: cyl, label: "project\nvolume" }
+    Setup[Project setup] -->|Clones and populates workshop repo| Volume@{ shape: cyl, label: "project\nvolume" }
     Volume --> project
 
-    ProxyContainer[Socket Proxy] -->|Creates socket| SocketVolume@{ shape: cyl, label: "socket\nvolume" }
-    SocketVolume --> socket
+    Volume --> Instructions[Workshop instructions]
+
+    SocketVolume -->|Mounted into| Forwarder
+    Forwarder -->|Listens for published ports and starts|socat
+    socat <--> |Can connect to published ports via localhost| localhostPorts
+
+    ProxyContainer[Socket Proxy] -->|Creates Docker API proxy and mutator| SocketVolume@{ shape: cyl, label: "Docker socket\nvolume" }
+    SocketVolume -->|Mounted at| socket
 ```
 
-- VS Code Server - utilizes the [coder/code-server](https://github.com/coder/code-server) project to provide VS Code in a browser
-- Setup container - clones the repo and puts it into a volume that is then shared with the VS Code server.
-  - For this PoC, it will clone and use the [Catalog Service](https://github.com/dockersamples/catalog-service-node) project. But, it's pretty easy to swap to another project
-- [Docker Socket Proxy](https://github.com/mikesir87/docker-socket-proxy) - wraps the Docker Socket to put various protections/remappings in place. Specifically:
+- **VS Code Server** - utilizes the [coder/code-server](https://github.com/coder/code-server) project to provide VS Code in a browser
+- **Setup container** - clones the repo and puts it into a volume that is then shared with the VS Code server.
+- **[Docker Socket Proxy](https://github.com/mikesir87/docker-socket-proxy)** - wraps the Docker Socket to put various protections/remappings in place. Specifically:
   - Docker commands will only return the items created by this environment (newly created items are mutated with a label and object responses filter on that label)
   - Mounts in new containers are only allowed from within the project
   - Mount source paths are remapped to the volume the files are found in (even if using relative paths)
   - Requests to start a new container with the Docker socket will be remapped to use the proxied socket. This ensures Testcontainers config also uses the remapping, etc.
+- **Host Port Forwarder** - this container runs in the same network namespace as the VS Code Server and watches for container start/stop events that have published ports. It then starts socat processes to allow the forwarding of localhost ports to the container.
+    - Example: start a postgres container in the IDE terminal, publishing the port. With this, you can then connect to it using `psql -h localhost` without using host network mode (which isn't always available)
+- **Instructions** - a small markdown rendering server that renders the contents of the `docs` directory within a workshop repo
 
 ## Known limitations
 
 - Running multiple instances will cause port conflicts
 - Volume names are currently hard-coded in the Compose file (for remapping/allowlisting of mount sources)
-- The Compose file uses `$PWD` to setup the proxy config, which may or may not work in certain Windows environments
 
 ## Try it out
 
@@ -48,7 +62,7 @@ To try it out, you'll first start off by launching the workshop environment. Aft
 2. Start the stack using Docker Compose
 
     ```console
-    docker compose up -d
+    docker compose -f compose-poc.yaml up -d
     ```
 
 3. Open http://localhost:8085. When you're prompted for the password, simply enter `password`.
