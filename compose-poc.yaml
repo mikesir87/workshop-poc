@@ -40,6 +40,8 @@ services:
     volumes:
       - socket-proxy:/var/run
     network_mode: service:coder
+    environment:
+      LABEL_FILTER: demo-setup=true
     depends_on:
       - coder
 
