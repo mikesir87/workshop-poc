@@ -5,7 +5,7 @@ const path = require('path');
 
 const app = express();
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/postgres'
+  connectionString: process.env.DATABASE_URL || 'postgres://postgres:secret@localhost:5432/postgres'
 });
 
 app.engine('hbs', exphbs.engine({ extname: '.hbs' }));
@@ -40,7 +40,6 @@ app.post('/remove/:id', async (req, res) => {
   res.redirect('/');
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+app.listen(3000, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
