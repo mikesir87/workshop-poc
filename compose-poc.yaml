@@ -76,6 +76,7 @@ services:
             allowedSources:
               - project
               - socket-proxy
+              - buildx_buildkit_default_state
 
         responseFilters:
           # Only return objects with the labels we mutated on
