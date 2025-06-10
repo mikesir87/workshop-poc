@@ -1,16 +1,22 @@
 const Docker = require('dockerode');
 const child_process = require('child_process');
+const { determineNetworkConnectivity } = require('./util');
 
 const docker = new Docker();
-const filterExpr = process.env.CONTAINER_FILTER ? JSON.parse(process.env.CONTAINER_FILTER) : {};
+const labelFilterExpr = {
+  label: (process.env.LABEL_FILTER || "demo=app").split(','),
+};
+
 const PORT_OFFSET = parseInt(process.env.PORT_OFFSET || '0', 10);
 
 const tearDowns = {};
 
 async function onContainerStart(containerId) {
-  const containerData = await docker.getContainer(containerId).inspect();
+  let containerData = await docker.getContainer(containerId).inspect();
   if (!containerData)
     return;
+
+  const {networkName, ipAddress} = await determineNetworkConnectivity(docker, containerData);
 
   if (containerData.NetworkSettings && containerData.NetworkSettings.Ports) {
     const ports = Object.keys(containerData.NetworkSettings.Ports)
@@ -21,45 +27,34 @@ async function onContainerStart(containerId) {
 
     ports.forEach(port => {
       const hostPort = port + PORT_OFFSET;
-      /*
-      const containerIP = containerData.NetworkSettings.IPAddress ||
-        (containerData.NetworkSettings.Networks && Object.values(containerData.NetworkSettings.Networks)[0].IPAddress);
 
-      if (!containerIP) {
-        console.warn(`No IP address found for container ${containerData.Id}`);
-        return;
-      }
-      */
-      const containerIP = "host.docker.internal";
+      console.log(`Setting up port forwarding: host port ${hostPort} -> container ${ipAddress}:${port}`);
 
-      console.log(`Setting up port forwarding: host port ${hostPort} -> container ${containerIP}:${port}`);
-
-      const socatCmd = `socat TCP-LISTEN:${hostPort},fork,reuseaddr TCP:${containerIP}:${port}`;
-      const proc = child_process.spawn('sh', ['-c', socatCmd], {
+      const proc = child_process.spawn('socat', [`TCP-LISTEN:${hostPort},fork,reuseaddr`, `TCP:${ipAddress}:${port}`], {
         stdio: 'inherit'
       });
       socatProcs.push(proc);
 
       proc.on('exit', (code, signal) => {
-        console.log(`socat process for port ${port} exited with code ${code}, signal ${signal}`);
+        socatProcs.splice(socatProcs.indexOf(proc), 1);
       });
-
-      console.log(`Started socat: host port ${hostPort} -> container ${containerIP}:${port}`);
     });
     
     // Store teardown function for this container
     tearDowns[containerData.Id] = async () => {
       console.log(`Tearing down resources for container ${containerData.Id}`);
       socatProcs.forEach(proc => {
-        if (!proc.killed) proc.kill();
+        if (!proc.killed) {
+          if (!proc.kill("SIGTERM")) {
+            console.error(`Failed to kill socat process ${proc.pid} for container ${containerData.Id}`);
+          }
+        }
       });
+      
       delete tearDowns[containerData.Id];
       console.log(`Resources removed for container ${containerData.Id}`);
     };
   }
-
-  console.log(`Container ID: ${containerData.Id}`);
-  // console.log(JSON.stringify(containerData, null, 2));
 }
 
 async function onContainerDie(containerId) {
@@ -69,11 +64,10 @@ async function onContainerDie(containerId) {
   
   if (tearDowns[containerData.Id]) {
     await tearDowns[containerData.Id]();
-    console.log(`Tore down resources for container ${containerData.Id}`);
   }
 }
 
-docker.listContainers({ filters: filterExpr }, (err, containers) => {
+docker.listContainers({ filters: labelFilterExpr }, (err, containers) => {
   if (err) {
     console.error('Error listing Docker containers:', err.message);
     process.exit(1);
@@ -86,7 +80,7 @@ docker.listContainers({ filters: filterExpr }, (err, containers) => {
   });
 });
 
-docker.getEvents({ filters: filterExpr }, (err, stream) => {
+docker.getEvents({ filters: { event: ['start', 'die'], ...labelFilterExpr } }, (err, stream) => {
   if (err) {
     console.error('Error connecting to Docker events:', err.message);
     process.exit(1);
