@@ -4,9 +4,9 @@ ENV CS_DISABLE_GETTING_STARTED_OVERRIDE=1
 ENV PORT=8085
 EXPOSE 8085
 
-RUN mkdir -p ~/.docker/cli-plugins
+RUN mkdir -p ~/.docker/cli-plugins && chown -R coder:coder ~/.docker
 COPY --link --from=docker /usr/local/bin/docker /usr/local/bin/docker
-COPY --link --from=docker /usr/local/libexec/docker/cli-plugins /home/coder/.docker/cli-plugins
+COPY --link --from=docker --chown=1000:1000 /usr/local/libexec/docker/cli-plugins /home/coder/.docker/cli-plugins
 
 USER root
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x -o /tmp/nodesource_setup.sh && \
