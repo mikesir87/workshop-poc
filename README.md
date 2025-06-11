@@ -62,7 +62,7 @@ To try it out, you'll first start off by launching the workshop environment. Aft
 2. Start the stack using Docker Compose
 
     ```console
-    docker compose -f compose-poc.yaml up -d
+    docker compose -f compose.yaml up -d
     ```
 
 3. Open http://localhost:8085. When you're prompted for the password, simply enter `password`.

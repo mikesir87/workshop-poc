@@ -97,3 +97,4 @@ volumes:
     name: socket-proxy
   project:
     name: project
+    external: true
