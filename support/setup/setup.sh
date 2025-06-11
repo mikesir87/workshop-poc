@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 if [ -z "$PROJECT_CLONE_URL" ]; then
   echo "Error: PROJECT_CLONE_URL environment variable is not set."
   exit 1
@@ -20,5 +22,9 @@ cd /project
 ls -A1 | xargs rm -rf
 
 git clone $PROJECT_CLONE_URL .
+
+if [ -f "./setup.sh" ]; then
+  bash ./setup.sh
+fi
 
 chown 1000:1000 -R /project
