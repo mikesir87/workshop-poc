@@ -1,3 +1,4 @@
 {
-    "remote.autoForwardPorts": false
+    "remote.autoForwardPorts": false,
+    "workbench.startupEditor": "readme"
 }
